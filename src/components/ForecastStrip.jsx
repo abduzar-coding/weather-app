@@ -1,84 +1,69 @@
 // src/components/ForecastStrip.jsx
-import { motion } from "framer-motion";
-import TempSparkline from "./TempSparkline";
-
-function HourlyCard({ hour, icon, temp }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg bg-white/15 dark:bg-black/20 backdrop-blur px-3 py-2 min-w-20">
-      <p className="text-xs opacity-80">{hour}</p>
-      <img
-        className="w-10 h-10"
-        src={`https://openweathermap.org/img/wn/${icon}.png`}
-        alt=""
-      />
-      <p className="text-sm font-semibold">{Math.round(temp)}°</p>
-    </div>
-  );
-}
-
-function DayCard({ day, icon, min, max }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg bg-white/15 dark:bg-black/20 backdrop-blur px-3 py-2">
-      <div className="flex items-center gap-3">
-        <img
-          className="w-8 h-8"
-          src={`https://openweathermap.org/img/wn/${icon}.png`}
-          alt=""
-        />
-        <p className="text-sm font-medium">{day}</p>
-      </div>
-      <p className="text-sm">
-        <span className="opacity-80">{Math.round(min)}°</span>
-        <span className="mx-1 opacity-30">/</span>
-        <span className="font-semibold">{Math.round(max)}°</span>
-      </p>
-    </div>
-  );
-}
+import { motion } from 'framer-motion'
 
 export default function ForecastStrip({ hourly = [], daily = [], hourlyTemps = [] }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", duration: 0.6 }}
-      className="w-full max-w-2xl mt-6 space-y-6"
-    >
-      {/* Sparkline */}
-      {hourlyTemps.length > 1 && (
-        <div className="rounded-xl bg-white/20 dark:bg-black/20 backdrop-blur p-4">
-          <p className="text-sm mb-2 opacity-90">Next 24h temperature</p>
-          <TempSparkline data={hourlyTemps} />
-          <div className="mt-2 text-xs opacity-70 flex justify-between">
-            <span>Now</span>
-            <span>+24h</span>
-          </div>
+    <div className="w-full flex flex-col items-center gap-6">
+      {/* Hourly Forecast */}
+      <div className="w-full max-w-4xl rounded-2xl p-5 bg-white/50 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-md">
+        <h3 className="text-lg font-semibold mb-3">Hourly</h3>
+        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/20">
+          {hourly.map((h, idx) => (
+            <motion.div
+              key={h.dt || idx}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: idx * 0.02 }}
+              className="min-w-[100px] text-center rounded-xl bg-white/60 dark:bg-white/10 
+                border border-white/50 dark:border-white/10 px-3 py-4 shadow-sm backdrop-blur"
+            >
+              <div className="text-xs opacity-75 mb-1">{h.hour}</div>
+              <img
+                src={h.icon}
+                alt=""
+                width={44}
+                height={44}
+                className="mx-auto select-none"
+                loading="lazy"
+                onError={(e) => { e.currentTarget.src = 'https://openweathermap.org/img/wn/01d@2x.png' }}
+              />
+              <div className="mt-1 font-semibold tabular-nums">{Math.round(h.temp)}°</div>
+            </motion.div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Hourly */}
-      {hourly.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Hourly</h3>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {hourly.map((h) => (
-              <HourlyCard key={h.dt} hour={h.hour} icon={h.icon} temp={h.temp} />
-            ))}
-          </div>
+      {/* Daily Forecast */}
+      <div className="w-full max-w-4xl rounded-2xl p-5 bg-white/50 dark:bg-white/5 backdrop-blur-md border border-white/40 dark:border-white/10 shadow-md">
+        <h3 className="text-lg font-semibold mb-3">Next 5 Days</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {daily.map((d, idx) => (
+            <div
+              key={d.date || idx}
+              className="flex items-center justify-between rounded-xl px-4 py-3 
+                bg-white/60 dark:bg-white/10 border border-white/50 dark:border-white/10 
+                backdrop-blur-md shadow-sm"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 bg-brand-500 rounded-full shadow-[0_0_0_3px_rgba(31,176,255,0.15)]" />
+                <span className="font-medium">{d.day}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <img
+                  src={`https://openweathermap.org/img/wn/${d.icon}@2x.png`}
+                  alt=""
+                  width={36}
+                  height={36}
+                  loading="lazy"
+                />
+                <span className="tabular-nums text-sm opacity-90">
+                  {Math.round(d.min)}° / <b>{Math.round(d.max)}°</b>
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
-
-      {/* 5-Day */}
-      {daily.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Next 5 Days</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {daily.map((d) => (
-              <DayCard key={d.date} day={d.day} icon={d.icon} min={d.min} max={d.max} />
-            ))}
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
+      </div>
+    </div>
+  )
 }

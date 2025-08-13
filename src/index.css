@@ -2,3 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Light theme animated gradient */
+.bg-gradient-light {
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+  background-size: 300% 300%;
+  animation: gradientMove 15s ease infinite;
+}
+
+/* Dark theme animated gradient */
+.bg-gradient-dark {
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  background-size: 300% 300%;
+  animation: gradientMove 15s ease infinite;
+}
+
+/* Animated gradient movement */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Global glassmorphism card style */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 28px rgba(255, 255, 255, 0.04);
+}
+
+/* Forecast card hover lift */
+.forecast-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.forecast-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth scrollbars */
+::-webkit-scrollbar {
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Optional button feedback */
+button:hover {
+  filter: brightness(1.05);
+}
+button:active {
+  transform: scale(0.97);
+}
+
+/* Utility card transition class */
+.card {
+  transition: all 0.25s ease-in-out;
+}

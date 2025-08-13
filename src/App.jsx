@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchBar from './components/SearchBar'
@@ -6,37 +5,49 @@ import WeatherCard from './components/WeatherCard'
 import ForecastStrip from './components/ForecastStrip'
 
 const getBackgroundGradient = (type, darkMode) => {
-  if (!type) return darkMode ? 'from-gray-900 to-gray-800' : 'from-blue-400 to-blue-600'
-  switch ((type || '').toLowerCase()) {
-    case 'clear': return darkMode ? 'from-yellow-500 to-gray-900' : 'from-blue-400 to-yellow-300'
-    case 'clouds': return darkMode ? 'from-gray-800 to-gray-900' : 'from-gray-400 to-gray-700'
-    case 'rain': return darkMode ? 'from-blue-900 to-gray-900' : 'from-gray-600 to-blue-800'
-    case 'snow': return darkMode ? 'from-blue-200 to-gray-800' : 'from-white to-blue-200'
-    case 'thunderstorm': return darkMode ? 'from-purple-900 to-black' : 'from-purple-700 to-gray-900'
-    case 'drizzle': return darkMode ? 'from-blue-700 to-gray-800' : 'from-blue-300 to-blue-500'
-    case 'mist':
-    case 'haze':
-    case 'fog': return darkMode ? 'from-gray-700 to-gray-900' : 'from-gray-300 to-gray-500'
-    default: return darkMode ? 'from-gray-900 to-gray-800' : 'from-blue-400 to-blue-600'
+  const light = {
+    default: 'from-[#cce4f6] via-[#e8f4fd] to-[#f7fbff]',
+    clear:   'from-[#dff3ff] via-[#fff3cf] to-[#fff7dd]',
+    clouds:  'from-[#e9edf3] via-[#dde4ee] to-[#d8e1ee]',
+    rain:    'from-[#d7e6f8] via-[#e6eff9] to-[#e9f0ff]',
+    snow:    'from-[#f0f6fb] via-[#eef6ff] to-[#f7fbff]',
+    fog:     'from-[#e5eaf0] via-[#edf0f5] to-[#f6f8fb]',
+    thunder: 'from-[#e9e3ff] via-[#f1edff] to-[#f7fbff]',
+    drizzle: 'from-[#e6f3ff] via-[#eef7fc] to-[#f5fbff]',
   }
+  const dark = {
+    default: 'from-[#0e1420] via-[#101826] to-[#131a29]',
+    clear:   'from-[#1a202f] via-[#121822] to-[#0f141d]',
+    clouds:  'from-[#1a1e29] via-[#12161f] to-[#0f141d]',
+    rain:    'from-[#0f1a26] via-[#0b111a] to-[#0c121a]',
+    snow:    'from-[#17202b] via-[#0e141c] to-[#0d141c]',
+    fog:     'from-[#161b24] via-[#0e141c] to-[#0b0f15]',
+    thunder: 'from-[#1a1626] via-[#0f0e16] to-[#0e1018]',
+    drizzle: 'from-[#13202b] via-[#0d141c] to-[#0e141d]',
+  }
+  const k = (type || '').toLowerCase()
+  const map = darkMode ? dark : light
+  if (['mist','haze','fog'].includes(k)) return map.fog
+  if (k === 'clear') return map.clear
+  if (k === 'clouds') return map.clouds
+  if (k === 'rain') return map.rain
+  if (k === 'snow') return map.snow
+  if (k === 'thunderstorm') return map.thunder
+  if (k === 'drizzle') return map.drizzle
+  return map.default
 }
-
-// time helpers
-const toLocalDate = (unixSec, tzOffsetSec) => new Date((unixSec + tzOffsetSec) * 1000)
-const shortHour = (d) => new Intl.DateTimeFormat(undefined, { hour: '2-digit' }).format(d)
-const weekday = (d) => new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(d)
 
 function App() {
   const [city, setCity] = useState('')
   const [weather, setWeather] = useState(null)
-  const [hourly, setHourly] = useState([])          // 24 hourly items
-  const [daily, setDaily] = useState([])            // next 5 days (grouped)
-  const [hourlyTemps, setHourlyTemps] = useState([]) // sparkline
+  const [hourly, setHourly] = useState([])
+  const [daily, setDaily] = useState([])
+  const [hourlyTemps, setHourlyTemps] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : false
+    return saved ? JSON.parse(saved) : window.matchMedia?.('(prefers-color-scheme: dark)').matches
   })
 
   const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY
@@ -47,7 +58,10 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode))
   }, [darkMode])
 
-  // normalize current weather
+  const toLocalDate = (unixSec, tz) => new Date((unixSec + tz) * 1000)
+  const shortHour = (d) => new Intl.DateTimeFormat(undefined, { hour: '2-digit' }).format(d)
+  const weekday = (d) => new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(d)
+
   const mapCurrent = (data) => ({
     name: data.name,
     temp: Math.round(data.main.temp),
@@ -58,10 +72,9 @@ function App() {
     wind: data.wind.speed,
     type: data.weather[0].main,
     tzOffset: data.timezone ?? 0,
-    coord: data.coord, // { lat, lon }
+    coord: data.coord,
   })
 
-  // Build 5‑day view from 3‑hour forecast
   const buildDailyFrom3h = (forecastData, tzOffset) => {
     const list = forecastData.list || []
     const byDay = {}
@@ -71,12 +84,10 @@ function App() {
       if (!byDay[key]) byDay[key] = []
       byDay[key].push(it)
     })
-
     const dayKeys = Object.keys(byDay).slice(0, 5)
-    const dailyArr = dayKeys.map((k) => {
+    setDaily(dayKeys.map((k) => {
       const bucket = byDay[k]
       const temps = bucket.map((b) => b.main.temp)
-      // pick icon near 12:00
       let best = bucket[0], bestDiff = 24
       bucket.forEach((b) => {
         const h = toLocalDate(b.dt, tzOffset).getHours()
@@ -91,144 +102,135 @@ function App() {
         max: Math.max(...temps),
         icon: best.weather?.[0]?.icon || '01d',
       }
-    })
-    setDaily(dailyArr)
+    }))
   }
 
-  // Fetch true hourly (1‑hour steps) via One Call 3.0
-  const fetchHourlyOneCall = async (lat, lon) => {
-    const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,alerts&units=metric&appid=${apiKey}`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error('Failed to fetch hourly forecast')
-    const data = await res.json()
-    const tzOffset = data.timezone_offset ?? 0
-    const h24 = (data.hourly || []).slice(0, 24).map((h) => {
-      const d = toLocalDate(h.dt, tzOffset)
-      return {
-        dt: h.dt,
-        hour: shortHour(d),
-        temp: h.temp,
-        icon: (h.weather?.[0]?.icon || '01d') + '.png',
+  const build24hFrom3hForecast = (list, tzOffset) => {
+    const pts = list.slice(0, 9)
+    if (pts.length < 2) return []
+    const out = []
+    for (let i = 0; i < 8; i++) {
+      const a = pts[i], b = pts[i + 1] || pts[i]
+      const tA = a.dt, tB = b.dt
+      const tempA = a.main.temp, tempB = b.main.temp
+      const iconCode = a.weather?.[0]?.icon || '01d'
+      for (let j = 0; j < 3; j++) {
+        const frac = j / 3
+        const temp = tempA + (tempB - tempA) * frac
+        const dt = tA + Math.round((tB - tA) * frac)
+        const d = toLocalDate(dt, tzOffset)
+        out.push({
+          dt, hour: shortHour(d), temp,
+          icon: `https://openweathermap.org/img/wn/${iconCode}@2x.png`,
+        })
       }
-    })
-    setHourly(h24)
-    setHourlyTemps(h24.map((x) => x.temp))
+    }
+    return out.slice(0, 24)
   }
 
   const fetchAll = async ({ q, lat, lon }) => {
-    if (!apiKey) throw new Error('Missing OpenWeather API key (VITE_OPENWEATHER_API_KEY)')
-
-    // 1) current
-    const params = q ? `q=${encodeURIComponent(q)}` : `lat=${lat}&lon=${lon}`
-    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${params}&units=metric&appid=${apiKey}`
-    const curRes = await fetch(currentUrl)
-    if (!curRes.ok) throw new Error('Failed to fetch current weather')
-    const cur = await curRes.json()
-    const mapped = mapCurrent(cur)
-    setWeather(mapped)
-    if (mapped?.name) document.title = `${mapped.name} Weather | Abduzar-weather`
-
-    // we need lat/lon for hourly onecall (works for both city + coords flows)
-    const latUse = mapped?.coord?.lat ?? lat
-    const lonUse = mapped?.coord?.lon ?? lon
-
-    // 2) hourly 1‑hour steps (24)
-    await fetchHourlyOneCall(latUse, lonUse)
-
-    // 3) daily (5‑day) using 3‑hour forecast endpoint
-    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latUse}&lon=${lonUse}&units=metric&appid=${apiKey}`
-    const fRes = await fetch(forecastUrl)
-    if (!fRes.ok) throw new Error('Failed to fetch 5‑day forecast')
-    const fc = await fRes.json()
-    const tz = fc.city?.timezone ?? mapped.tzOffset ?? 0
-    buildDailyFrom3h(fc, tz)
-  }
-
-  const fetchWeatherByCoords = async (lat, lon) => {
-    setLoading(true)
-    setError('')
-    setWeather(null)
+    setLoading(true); setError(''); setWeather(null)
     try {
-      await fetchAll({ lat, lon })
+      if (!apiKey) throw new Error('Missing OpenWeather API key (VITE_OPENWEATHER_API_KEY)')
+      const params = q ? `q=${encodeURIComponent(q)}` : `lat=${lat}&lon=${lon}`
+      const currentUrl = `https://api.openweathermap.org/data/2.5/weather?${params}&units=metric&appid=${apiKey}`
+      const curRes = await fetch(currentUrl)
+      if (!curRes.ok) throw new Error('Failed to fetch current weather')
+      const cur = await curRes.json()
+      const mapped = mapCurrent(cur)
+      setWeather(mapped)
+      if (mapped?.name) document.title = `${mapped.name} Weather | Abduzar-weather`
+
+      const latUse = mapped?.coord?.lat ?? lat
+      const lonUse = mapped?.coord?.lon ?? lon
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${latUse}&lon=${lonUse}&units=metric&appid=${apiKey}`
+      const fRes = await fetch(forecastUrl)
+      if (!fRes.ok) throw new Error('Failed to fetch 5-day forecast')
+      const fc = await fRes.json()
+      const tz = fc.city?.timezone ?? mapped.tzOffset ?? 0
+      buildDailyFrom3h(fc, tz)
+      const derived = build24hFrom3hForecast(fc.list || [], tz)
+      setHourly(derived)
+      setHourlyTemps(derived.map((x) => x.temp))
     } catch (err) {
-      setError(err.message || 'Unable to get weather from your location')
+      setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSearch = async () => {
-    if (!city) return
-    setLoading(true)
-    setError('')
-    setWeather(null)
-    try {
-      await fetchAll({ q: city })
-    } catch (err) {
-      setError(err.message || 'City not found')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Auto geolocation on mount (original behavior), with better options & messages
   useEffect(() => {
-    if (!navigator.geolocation) return
-    const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords
-        fetchWeatherByCoords(latitude, longitude)
-      },
-      (err) => {
-        const code = err?.code
-        const reason =
-          code === 1 ? 'Location permission denied'
-          : code === 2 ? 'Location unavailable'
-          : code === 3 ? 'Location request timed out'
-          : 'Could not get your location'
-        setError(`${reason}. You can also search by city.`)
-      },
-      opts
-    )
-  }, []) // run once
+    (async () => {
+      const isSecure = window.isSecureContext
+      const perm = await (async () => {
+        try {
+          const st = await navigator.permissions?.query({ name: 'geolocation' })
+          return st?.state ?? 'unknown'
+        } catch { return 'unknown' }
+      })()
+
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject,
+              { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }))
+          return fetchAll({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+        } catch {}
+      }
+
+      try {
+        const ipRes = await fetch('https://ipapi.co/json/')
+        const ip = await ipRes.json()
+        if (ip?.latitude && ip?.longitude) {
+          await fetchAll({ lat: ip.latitude, lon: ip.longitude })
+          if (perm !== 'granted' || !isSecure) {
+            setError(`Using approximate IP location. Permission: ${perm}. Secure: ${isSecure}.`)
+          }
+        }
+      } catch {
+        setError('Could not determine your location. Please search by city.')
+      }
+    })()
+  }, [])
 
   const bgGradient = getBackgroundGradient(weather?.type, darkMode)
 
   return (
-    <div
-      className={`min-h-screen flex flex-col items-center justify-start sm:justify-center bg-gradient-to-b ${bgGradient} ${
-        darkMode ? 'text-gray-100' : 'text-white'
-      } px-4 py-8 transition-all duration-700`}
-    >
-      <motion.h1
-        className="text-4xl font-bold mb-6 mt-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, type: 'spring' }}
-      >
-        Weather App
-      </motion.h1>
+    <div className="relative min-h-screen overflow-x-hidden">
+      <div className={`min-h-screen bg-gradient-to-b ${bgGradient} ${darkMode ? 'text-gray-100' : 'text-gray-900'} transition-all duration-700`}>
+        <div className="w-full max-w-7xl mx-auto px-4 py-10">
+          <motion.h1
+            className="text-4xl md:text-5xl font-bold mb-6 tracking-tight drop-shadow-lg text-center"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, type: 'spring' }}
+          >
+            Weather<span className="text-sky-500">.</span>
+          </motion.h1>
 
-      <SearchBar
-        city={city}
-        setCity={setCity}
-        handleSearch={handleSearch}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-      />
+          <SearchBar
+            city={city}
+            setCity={setCity}
+            handleSearch={() => city && fetchAll({ q: city })}
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+          />
 
-      {loading && <p className="text-lg">Loading...</p>}
-      {error && <p className="text-red-300 dark:text-red-400">{error}</p>}
+          {loading && <p className="text-base opacity-80 mt-2 text-center">Loading...</p>}
+          {error && <p className="text-rose-300 dark:text-rose-400 mt-2 text-sm text-center">{error}</p>}
 
-      <AnimatePresence mode="wait">
-        {weather && !loading && (
-          <>
-            <WeatherCard weather={weather} />
-            <ForecastStrip hourly={hourly} daily={daily} hourlyTemps={hourlyTemps} />
-          </>
-        )}
-      </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {weather && !loading && (
+              <div className="mt-8 flex flex-col items-center gap-8">
+                <WeatherCard weather={weather} />
+                <div className="w-full max-w-4xl">
+                  <ForecastStrip hourly={hourly} daily={daily} hourlyTemps={hourlyTemps} />
+                </div>
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   )
 }
