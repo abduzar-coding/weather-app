@@ -1,3 +1,4 @@
+// src/components/WeatherCard.jsx
 import { motion } from 'framer-motion'
 
 function WeatherCard({ weather }) {
@@ -18,11 +19,16 @@ function WeatherCard({ weather }) {
         className="mx-auto"
       />
       <p className="text-xl font-bold">{weather.temp}°C</p>
-      <p className="capitalize">{weather.description}</p>
+      <p className="capitalize opacity-90">{weather.description}</p>
+
       <div className="flex justify-between mt-4 text-sm">
         <p>💧 Humidity: {weather.humidity}%</p>
         <p>💨 Wind: {weather.wind} km/h</p>
       </div>
+
+      {typeof weather.feelsLike === 'number' && (
+        <p className="mt-2 text-sm opacity-90">Feels like: {Math.round(weather.feelsLike)}°C</p>
+      )}
     </motion.div>
   )
 }
